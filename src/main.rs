@@ -2,6 +2,8 @@
 
 use std::io::Write;
 
+use glam::DVec3;
+
 pub const IMG_WIDTH: u32 = 1920;
 pub const IMG_HEIGHT: u32 = 1080;
 
@@ -20,20 +22,33 @@ fn main() {
     save(&screen)
 }
 
-struct Ray {
+struct Pixel {
     r: u8,
     g: u8,
     b: u8,
 }
 
-fn send_ray(row: u32, column: u32) -> Ray {
-    let mut r = Ray {
+struct Ray {
+    origin: DVec3,
+    direction: DVec3,
+}
+impl Ray {
+    pub fn at(&self, t: f64) -> DVec3 {
+        self.origin + t * self.direction
+    }
+}
+
+#[optimize(speed)]
+fn send_ray(row: u32, column: u32) -> Pixel {
+    let ray = Ray {
+        origin: DVec3::new(x, y, z),
+        direction: todo!(),
+    };
+    Pixel {
         r: 0,
         g: 0,
         b: 0,
-    };
-    
-    r
+    }
 }
 
 
