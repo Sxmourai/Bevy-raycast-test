@@ -13,7 +13,7 @@ use std::io::Write;
 use glam::{DVec2, DVec3, Vec3};
 use materials::Material;
 use objects::{Hittable, Sphere};
-use rand::{distributions::Bernoulli, rngs::StdRng};
+use rand::{distributions::Bernoulli, rngs::StdRng, Rng};
 use rays::Ray;
 use screen::Screen;
 
@@ -53,11 +53,18 @@ fn rnd_f64(min: f64, max: f64) -> f64 {
 }
 
 fn random_in_unit_sphere() -> DVec3 {
-    for i in 0..10_000 {
-        let p = DVec3::new(rnd_f64(-1., 1.),rnd_f64(-1., 1.),rnd_f64(-1., 1.));
-        if (p.length_squared()<1.) {return p}
+    let mut rng = rand::thread_rng();
+    loop {
+        let vec = DVec3::new(
+            rng.gen_range(-1.0..1.),
+            rng.gen_range(-1.0..1.),
+            rng.gen_range(-1.0..1.),
+        );
+
+        if vec.length_squared() < 1. {
+            break vec;
+        }
     }
-    panic!("Trying to generate number took to many attempts")
 }
 
 fn random_on_hemisphere(normal: DVec3) -> DVec3 {
@@ -86,23 +93,28 @@ fn set_face_normal(ray: &Ray, outward_normal: DVec3) -> DVec3 {
 
 fn ray_color(screen: &Screen, objects: &Vec<Box<dyn Hittable>>, ray: Ray, depth: u8) -> DVec3 {
     if depth == 0 {return DVec3::ZERO}
-    let unit_direction = ray.direction.normalize();
-    let a = 0.5*(unit_direction.y + 1.0);
-    let mut color = (1.0-a)*DVec3::new(1.0, 1.0, 1.0) + a*DVec3::new(0.5, 0.7, 1.0);
     let mut hit_anything = false;
     let mut closest_so_far = f64::MAX;
+    let mut last_hit = None;
     for obj in objects {
         if let Some(record) = obj.hit(&ray, 0.001, closest_so_far) {
             hit_anything = true;
             closest_so_far = record.t;
-            if let Some((ray, attenuation)) = record.mat.scatter(&ray, &record) {
-                return attenuation * ray_color(screen, objects, ray, depth-1)
-            } else {
-                return DVec3::ZERO;
-            }
+            last_hit.replace(record);
             // let dir = record.normal + random_in_unit_sphere().normalize();
             // color = 0.3 * ray_color(screen, objects, Ray::new(record.point, dir), depth - 1);
         }
     }
+    if hit_anything {
+        let record = last_hit.unwrap();
+        if let Some((scattered, attenuation)) = record.mat.scatter(&ray, &record) {
+            return attenuation * ray_color(screen, objects, scattered, depth-1)
+        } else {
+            return DVec3::ZERO;
+        }
+    }
+    let unit_direction = ray.direction.normalize();
+    let a = 0.3*(unit_direction.y + 1.0);
+    let mut color = (1.0-a)*DVec3::new(1.0, 1.0, 1.0) + a*DVec3::new(0.5, 0.7, 1.0);
     return color
 }

@@ -13,7 +13,7 @@ impl Material {
             Material::Lambertian(albedo) => {
                 let mut direction = hit_record.normal + random_in_unit_sphere().normalize();
                 // Catch degenerate scatter direction
-                if near_zero(direction) {
+                if direction.abs_diff_eq(DVec3::ZERO, 1e-8) {
                     direction = hit_record.normal;
                 }
                 Some((Ray {
