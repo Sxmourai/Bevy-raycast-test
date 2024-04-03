@@ -1,0 +1,57 @@
+thread 'rustc' panicked at /rustc/87e1447aadaa2899ff6ccabe1fa669eb50fb60a1\compiler\rustc_query_system\src\dep_graph\graph.rs:348:9:
+forcing query with already existing `DepNode`
+- query-key: ParamEnvAnd { param_env: ParamEnv { caller_bounds: [], reveal: UserFacing }, value: glam::DVec3 }
+- dep-node: needs_drop_raw(195b59d5519c807a-40398a20fc05d6d3)
+stack backtrace:
+   0:     0x7ffc6eccddff - std::backtrace::Backtrace::force_capture::hb150135950239a44
+   1:     0x7ffc6eccdd64 - std::backtrace::Backtrace::force_capture::hb150135950239a44
+   2:     0x7ffc7365a609 - <tracing_subscriber[24c04d9a3a9d4553]::util::TryInitError as core[4460ee954eb307]::fmt::Display>::fmt
+   3:     0x7ffc6ece6d43 - std::panicking::rust_panic_with_hook::he91fa81e77a204ca
+   4:     0x7ffc6ece6be5 - <std::panicking::begin_panic_handler::StaticStrPayload as core::panic::PanicPayload>::take_box::hbdc34514ca257c16
+   5:     0x7ffc6ece3d89 - <std::sys_common::backtrace::_print::DisplayBacktrace as core::fmt::Display>::fmt::hfa1b2a4dec595efe
+   6:     0x7ffc6ece68f4 - rust_begin_unwind
+   7:     0x7ffc6ed3b637 - core::panicking::panic_fmt::h713a2ba8d4dfe079
+   8:     0x7ffc72f9f517 - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+   9:     0x7ffc72f5771c - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+  10:     0x7ffc72cecf10 - rustc_mir_build[29af50b7a65c035a]::build::mir_built
+  11:     0x7ffc72ce9fbb - rustc_mir_build[29af50b7a65c035a]::build::mir_built
+  12:     0x7ffc72eff72f - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+  13:     0x7ffc72f828bf - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+  14:     0x7ffc73017e04 - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+  15:     0x7ffc721d4d1a - rustc_query_impl[8396c34979e75e91]::profiling_support::alloc_self_profile_query_strings
+  16:     0x7ffc7215a099 - rustc_query_impl[8396c34979e75e91]::profiling_support::alloc_self_profile_query_strings
+  17:     0x7ffc72f15c9b - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+  18:     0x7ffc72f15c33 - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+  19:     0x7ffc72f15c33 - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+  20:     0x7ffc72f15c33 - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+  21:     0x7ffc72f858b0 - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+  22:     0x7ffc72f2d6a8 - <rustc_query_impl[8396c34979e75e91]::plumbing::QueryCtxt as rustc_query_system[c3fbdf76f86c8b19]::query::QueryContext>::load_side_effects
+  23:     0x7ffc737881e2 - rustc_interface[a2505b8de2b69921]::interface::try_print_query_stack
+  24:     0x7ffc73783e63 - rustc_interface[a2505b8de2b69921]::interface::try_print_query_stack
+  25:     0x7ffc73753552 - time_core[169b98802c4fbe88]::util::weeks_in_year
+  26:     0x7ffc737a694f - rustc_interface[a2505b8de2b69921]::interface::try_print_query_stack
+  27:     0x7ffc7378b5a1 - rustc_interface[a2505b8de2b69921]::interface::try_print_query_stack
+  28:     0x7ffc737877f9 - rustc_interface[a2505b8de2b69921]::interface::try_print_query_stack
+  29:     0x7ffc737918c4 - rustc_interface[a2505b8de2b69921]::interface::try_print_query_stack
+  30:     0x7ffc74d8a5d6 - <rayon_core[737c350afb53d94e]::registry::WorkerThread>::wait_until_cold
+  31:     0x7ffc74d889f0 - <rayon_core[737c350afb53d94e]::registry::ThreadBuilder>::run
+  32:     0x7ffc73648aed - <rustc_data_structures[530c8ac768995c78]::hashes::Hash128 as core[4460ee954eb307]::fmt::Debug>::fmt
+  33:     0x7ffc7366ef5c - <tracing_subscriber[24c04d9a3a9d4553]::util::TryInitError as core[4460ee954eb307]::fmt::Display>::fmt
+  34:     0x7ffc7365a9fa - <tracing_subscriber[24c04d9a3a9d4553]::util::TryInitError as core[4460ee954eb307]::fmt::Display>::fmt
+  35:     0x7ffc7365c6bd - <tracing_subscriber[24c04d9a3a9d4553]::util::TryInitError as core[4460ee954eb307]::fmt::Display>::fmt
+  36:     0x7ffc7364bb79 - <rustc_data_structures[530c8ac768995c78]::hashes::Hash128 as core[4460ee954eb307]::fmt::Debug>::fmt
+  37:     0x7ffc73655c4b - <tracing_subscriber[24c04d9a3a9d4553]::util::TryInitError as core[4460ee954eb307]::fmt::Display>::fmt
+  38:     0x7ffc7364c1c7 - <rustc_data_structures[530c8ac768995c78]::hashes::Hash128 as core[4460ee954eb307]::fmt::Debug>::fmt
+  39:     0x7ffc6ecf8e8c - std::sys::windows::thread::Thread::new::hda31f1a5731c4e25
+  40:     0x7ffd3304257d - BaseThreadInitThunk
+  41:     0x7ffd34b4aa58 - RtlUserThreadStart
+
+
+rustc version: 1.76.0-nightly (87e1447aa 2023-11-30)
+platform: x86_64-pc-windows-msvc
+
+query stack during panic:
+#0 [needs_drop_raw] computing whether `glam::f64::dvec3::DVec3` needs drop
+#1 [mir_built] building MIR for `random_on_hemisphere`
+#2 [analysis] running analysis passes on this crate
+end of query stack

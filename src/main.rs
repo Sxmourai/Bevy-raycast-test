@@ -1,73 +1,108 @@
 #![feature(optimize_attribute)]
+#![cfg_attr(debug_assertions, allow(dead_code, unused))]
+
 
 pub mod screen;
 pub mod rays;
+pub mod camera;
+pub mod objects;
+pub mod materials;
 
 use std::io::Write;
 
-use glam::DVec3;
+use glam::{DVec2, DVec3, Vec3};
+use materials::Material;
+use objects::{Hittable, Sphere};
+use rand::{distributions::Bernoulli, rngs::StdRng};
 use rays::Ray;
 use screen::Screen;
 
-use crate::rays::send_ray;
 
 pub const IMG_WIDTH: u32 = 1920;
-pub const IMG_HEIGHT: u32 = (16/9)*IMG_WIDTH;
+pub const IMG_HEIGHT: u32 = ((9./16.)*IMG_WIDTH as f64) as _;
 
+#[optimize(speed)]
 fn main() {
-    let mut screen = Screen::new(IMG_WIDTH, IMG_HEIGHT);
-    
-    let aspect_ratio = 16.0 / 9.0;
-
-    // Camera
-    let focal_length = 1.0;
-    let viewport_height = 2.0;
-    let viewport_width = viewport_height * ((IMG_WIDTH as f64)/IMG_HEIGHT as f64);
-    let camera_center = DVec3::new(0., 0., 0.);
-
-    // Calculate the vectors across the horizontal and down the vertical viewport edges.
-    let viewport_u = DVec3::new(viewport_width, 0., 0.);
-    let viewport_v = DVec3::new(0., -viewport_height, 0.);
-
-    // Calculate the horizontal and vertical delta vectors from pixel to pixel.
-    let pixel_delta_u = viewport_u / IMG_WIDTH as f64;
-    let pixel_delta_v = viewport_v / IMG_HEIGHT as f64;
-
-    // Calculate the location of the upper left pixel.
-    let viewport_upper_left = camera_center
-                             - DVec3::new(0., 0., focal_length) - viewport_u/2. - viewport_v/2.;
-    let pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
-    for row in 0..IMG_HEIGHT {
-        for column in 0..IMG_WIDTH {
-            
-            let pixel_center = pixel00_loc + (column as f64 * pixel_delta_u) + (row as f64 * pixel_delta_v);
-            let ray_direction = pixel_center - camera_center;
-            let ray = Ray::new(camera_center, ray_direction);
-            let unit_direction = ray_direction.normalize();
-            let a = 0.5*(unit_direction.y + 1.0);
-            let mut ray_color = (1.0-a)*DVec3::new(1.0, 1.0, 1.0) + a*DVec3::new(0.5, 0.7, 1.0);
-            
-            if hit_sphere(DVec3::new(0.,0.,-1.), 0.5, ray) {
-                ray_color.x = 255.;
-                ray_color.y = 0.;
-                ray_color.z = 0.;
+    let mut screen = Screen::new(IMG_WIDTH.into(), IMG_HEIGHT.into());
+    let objects:Vec<Box<dyn Hittable>> = vec![
+        Box::new(Sphere {center:DVec3::new(0.,-100.5,-1.),radius:100., material: Material::Lambertian(DVec3::new(0.8, 0.8, 0.0)) }),
+        Box::new(Sphere {center:DVec3::new(0., 0., -1.),radius:0.5, material: Material::Lambertian(DVec3::new(0.7, 0.3, 0.3)) }),
+        Box::new(Sphere {center:DVec3::new(1., 0., -1.),radius:0.5, material: Material::Metal(DVec3::new(0.8, 0.8, 0.8)) }),
+        Box::new(Sphere {center:DVec3::new(-1., 0., -1.),radius:0.5, material: Material::Metal(DVec3::new(0.8, 0.6, 0.2)) }),
+    ];
+    for y in 0..IMG_HEIGHT {
+        for x in 0..IMG_WIDTH {
+            let mut color = DVec3::ZERO;
+            for sample in 0..screen.samples_per_pixel as _ {
+                let ray = screen.get_ray(x.into(),y.into());
+                color += ray_color(&screen, &objects, ray, 100);
             }
-            
-            screen.img[((row*IMG_WIDTH+column)*3+0) as usize] = (ray_color.x*255.) as _;
-            screen.img[((row*IMG_WIDTH+column)*3+1) as usize] = (ray_color.y*255.) as _;
-            screen.img[((row*IMG_WIDTH+column)*3+2) as usize] = (ray_color.z*255.) as _;
+            screen.write_pixel(DVec2::new(x.into(),y.into()), color);
         }
-        print!("Line: {}/{IMG_HEIGHT}...\r", row+1);
+        print!("Line: {}/{IMG_HEIGHT}...\r", y+1);
         std::io::stdout().flush().unwrap();
     }
     screen.save();
 }
+static mut RND_DISTRIB: Option<StdRng> = None;
+fn rnd_f64(min: f64, max: f64) -> f64 {
+    if unsafe { RND_DISTRIB.is_none() } {
+        unsafe { RND_DISTRIB.replace(<rand::rngs::StdRng as rand::SeedableRng>::from_entropy()) };
+    };
+    rand::Rng::sample::<f64, rand::distributions::Standard>(unsafe { RND_DISTRIB.as_mut().unwrap() }, rand::distributions::Standard)
+}
 
-fn hit_sphere(circle_center: DVec3, radius: f64, ray: Ray) -> bool {
-        let oc = ray.origin - circle_center;
-        let a = ray.direction.dot(ray.direction);
-        let b = 2.0 * oc.dot(ray.direction);
-        let c = oc.dot(oc) - radius*radius;
-        let discriminant = b*b - 4.*a*c;
-        discriminant >= 0.
+fn random_in_unit_sphere() -> DVec3 {
+    for i in 0..10_000 {
+        let p = DVec3::new(rnd_f64(-1., 1.),rnd_f64(-1., 1.),rnd_f64(-1., 1.));
+        if (p.length_squared()<1.) {return p}
+    }
+    panic!("Trying to generate number took to many attempts")
+}
+
+fn random_on_hemisphere(normal: DVec3) -> DVec3 {
+    let on_unit_sphere = random_in_unit_sphere().normalize();
+    if on_unit_sphere.dot(normal) > 0. { // In the same hemisphere as the normal
+        on_unit_sphere
+    } else {
+        -on_unit_sphere
+    }
+}
+
+/// Return true if the vector is close to zero in all dimensions.
+fn near_zero(vec: DVec3) -> bool {
+    let s = 1e-8;
+    vec.x<s && vec.y<s && vec.z<s
+}
+fn reflect(v: DVec3, n: DVec3) -> DVec3 {
+    v - 2.*v.dot(n)*n
+}
+// Sets the hit record normal vector.
+// NOTE: the parameter `outward_normal` is assumed to have unit length.
+fn set_face_normal(ray: &Ray, outward_normal: DVec3) -> DVec3 {
+    let front_face = ray.direction.dot(outward_normal);
+    if front_face < 0. {outward_normal} else {-outward_normal}
+}
+
+fn ray_color(screen: &Screen, objects: &Vec<Box<dyn Hittable>>, ray: Ray, depth: u8) -> DVec3 {
+    if depth == 0 {return DVec3::ZERO}
+    let unit_direction = ray.direction.normalize();
+    let a = 0.5*(unit_direction.y + 1.0);
+    let mut color = (1.0-a)*DVec3::new(1.0, 1.0, 1.0) + a*DVec3::new(0.5, 0.7, 1.0);
+    let mut hit_anything = false;
+    let mut closest_so_far = f64::MAX;
+    for obj in objects {
+        if let Some(record) = obj.hit(&ray, 0.001, closest_so_far) {
+            hit_anything = true;
+            closest_so_far = record.t;
+            if let Some((ray, attenuation)) = record.mat.scatter(&ray, &record) {
+                return attenuation * ray_color(screen, objects, ray, depth-1)
+            } else {
+                return DVec3::ZERO;
+            }
+            // let dir = record.normal + random_in_unit_sphere().normalize();
+            // color = 0.3 * ray_color(screen, objects, Ray::new(record.point, dir), depth - 1);
+        }
+    }
+    return color
 }

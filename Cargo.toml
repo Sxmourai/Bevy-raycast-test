@@ -8,6 +8,7 @@ edition = "2021"
 glam = "0.25.0"
 # bevy = { version = "0.13.0", features = ["wayland"] }
 png = "0.17.13"
+rand = "0.8.5"
 
 [profile.dev]
 opt-level = 1
